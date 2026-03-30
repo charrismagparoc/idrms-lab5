@@ -42,16 +42,19 @@ export default function Dashboard() {
   const overallLabel = overallScore>=70?'HIGH':overallScore>=40?'MEDIUM':'LOW'
   const overallColor = overallScore>=70?'var(--red)':overallScore>=40?'var(--orange)':'var(--green)'
 
+  const unaccounted = residents.filter(r => r.evacuationStatus === 'Unaccounted').length
+  const total       = residents.length || 1
+
   return (
     <div>
 
       {/* ── Row 1: Incident + Alerts summary stats ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:14 }}>
         {[
-          { ico:'fa-triangle-exclamation', val:incidents.length,                              lbl:'Total Incidents',    col:'var(--orange)' },
+          { ico:'fa-triangle-exclamation', val:incidents.length,                               lbl:'Total Incidents',   col:'var(--orange)' },
           { ico:'fa-circle-radiation',     val:incidents.filter(i=>i.status==='Active').length, lbl:'Active Incidents',  col:'var(--red)'    },
           { ico:'fa-circle-check',         val:incidents.filter(i=>i.status==='Resolved').length,lbl:'Resolved',         col:'var(--green)'  },
-          { ico:'fa-bell',                 val:alerts.length,                                  lbl:'Total Alerts Sent', col:'var(--purple)' },
+          { ico:'fa-bell',                 val:alerts.length,                                   lbl:'Total Alerts Sent', col:'var(--purple)' },
         ].map(({ ico,val,lbl,col }) => (
           <div key={lbl} className="card" style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 18px' }}>
             <div style={{ width:42, height:42, borderRadius:10, background:col+'1a', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
@@ -68,11 +71,11 @@ export default function Dashboard() {
       {/* ── Row 2: Alerts breakdown + Evac stats ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:14 }}>
         {[
-          { ico:'fa-circle-radiation', val:alertDanger,  lbl:'Danger Alerts',      col:'var(--red)'    },
-          { ico:'fa-triangle-exclamation', val:alertWarning, lbl:'Warning Alerts',  col:'var(--orange)' },
-          { ico:'fa-house-flag',       val:evacCenters.filter(c=>c.status==='Open').length, lbl:'Open Centers', col:'var(--green)'  },
-          { ico:'fa-person-walking',   val:totalOcc,                                lbl:'Current Evacuees',   col:'var(--blue)'   },
-          { ico:'fa-users',            val:residents.length,                        lbl:'Total Residents',     col:'var(--purple)' },
+          { ico:'fa-circle-radiation',     val:alertDanger,  lbl:'Danger Alerts',    col:'var(--red)'    },
+          { ico:'fa-triangle-exclamation', val:alertWarning, lbl:'Warning Alerts',   col:'var(--orange)' },
+          { ico:'fa-house-flag',           val:evacCenters.filter(c=>c.status==='Open').length, lbl:'Open Centers', col:'var(--green)'  },
+          { ico:'fa-person-walking',       val:totalOcc,     lbl:'Current Evacuees', col:'var(--blue)'   },
+          { ico:'fa-users',                val:residents.length, lbl:'Total Residents', col:'var(--purple)' },
         ].map(({ ico,val,lbl,col }) => (
           <div key={lbl} className="card" style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px' }}>
             <div style={{ width:36, height:36, borderRadius:9, background:col+'1a', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
@@ -274,7 +277,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Row 5: Charts + Activity ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:14 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:14, marginBottom:14 }}>
         {/* Incidents by type */}
         <div className="card">
           <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:14 }}>
@@ -335,6 +338,117 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* ── Row 6: Risk Intelligence Bars ── */}
+      <div className="card">
+        {/* Header */}
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:18 }}>
+          <i className="fa-solid fa-chart-bar" style={{ color:'var(--blue)', fontSize:14 }}></i>
+          <span style={{ fontWeight:700, fontSize:14 }}>Risk Intelligence Bars</span>
+          <span style={{ fontSize:11, color:'var(--t3)' }}>· AI-powered · updates live</span>
+        </div>
+
+        {/* Overall Risk — circle gauge */}
+        <div style={{ marginBottom:18, paddingBottom:16, borderBottom:'1px solid var(--border)',
+          display:'flex', alignItems:'center', gap:24 }}>
+          {/* Circle gauge */}
+          {(() => {
+            const size = 110, strokeW = 10
+            const radius = (size / 2) - strokeW
+            const circ   = 2 * Math.PI * radius
+            const offset = circ - (overallScore / 100) * circ
+            return (
+              <div style={{ flexShrink:0, position:'relative', width:size, height:size }}>
+                <svg width={size} height={size} style={{ transform:'rotate(-90deg)' }}>
+                  <circle cx={size/2} cy={size/2} r={radius}
+                    fill="none" stroke="var(--bg-el)" strokeWidth={strokeW} />
+                  <circle cx={size/2} cy={size/2} r={radius}
+                    fill="none" stroke={overallColor} strokeWidth={strokeW}
+                    strokeDasharray={circ} strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    style={{ transition:'stroke-dashoffset .6s ease' }} />
+                </svg>
+                <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column',
+                  alignItems:'center', justifyContent:'center', gap:2 }}>
+                  <span style={{ fontSize:24, fontWeight:800, color:overallColor,
+                    fontFamily:'var(--disp)', lineHeight:1 }}>{overallScore}</span>
+                  <span style={{ fontSize:9, fontWeight:700, color:overallColor,
+                    letterSpacing:'.6px', textTransform:'uppercase' }}>{overallLabel}</span>
+                </div>
+              </div>
+            )
+          })()}
+          {/* Labels */}
+          <div style={{ flex:1 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+              <span style={{ fontSize:14, fontWeight:700, color:'var(--t1)' }}>Overall Risk Score</span>
+              <span className={'badge ' + (overallLabel==='HIGH'?'bd-danger':overallLabel==='MEDIUM'?'bd-warning':'bd-success')}
+                style={{ fontSize:10 }}>{overallLabel}</span>
+            </div>
+            <p style={{ fontSize:12, color:'var(--t3)', margin:'0 0 12px', lineHeight:1.5 }}>
+            <br/>
+            </p>
+            <div style={{ display:'flex', gap:16 }}>
+              {[
+                ['0–39',  'LOW',    'var(--green)'],
+                ['40–69', 'MEDIUM', 'var(--orange)'],
+                ['70–100','HIGH',   'var(--red)'],
+              ].map(([range, lbl, c]) => (
+                <div key={lbl} style={{ display:'flex', alignItems:'center', gap:5 }}>
+                  <div style={{ width:8, height:8, borderRadius:'50%', background:c, flexShrink:0 }} />
+                  <span style={{ fontSize:11, color:'var(--t3)' }}>{range} = </span>
+                  <span style={{ fontSize:11, fontWeight:700, color:c }}>{lbl}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* High / Medium / Low / Unaccounted bars */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px 32px' }}>
+          {[
+            { label:'High Risk',   count:highCount,   color:'var(--red)',    badgeCls:'bd-danger',  desc:'Score 70+',          ico:'fa-triangle-exclamation' },
+            { label:'Medium Risk', count:mediumCount, color:'var(--orange)', badgeCls:'bd-warning', desc:'Score 40–69',         ico:'fa-circle-exclamation'   },
+            { label:'Low Risk',    count:lowCount,    color:'var(--green)',  badgeCls:'bd-success', desc:'Score 0–39',          ico:'fa-circle-check'         },
+            { label:'Unaccounted', count:unaccounted, color:'var(--yellow)', badgeCls:'bd-neutral', desc:'Evacuation unknown',  ico:'fa-person-circle-question'},
+          ].map(({ label, count, color, badgeCls, desc, ico }) => {
+            const pct = Math.round((count / total) * 100)
+            return (
+              <div key={label} style={{ marginBottom:6 }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                    <i className={'fa-solid ' + ico} style={{ color, fontSize:12 }}></i>
+                    <span style={{ fontSize:12.5, fontWeight:600, color:'var(--t1)' }}>{label}</span>
+                    <span style={{ fontSize:10.5, color:'var(--t3)' }}>{desc}</span>
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                    <span style={{ fontSize:13, fontWeight:700, color }}>{count}</span>
+                    <span className={'badge ' + badgeCls} style={{ fontSize:9.5, minWidth:36, textAlign:'center' }}>
+                      {pct}%
+                    </span>
+                  </div>
+                </div>
+                <div style={{ height:9, background:'var(--bg-el)', borderRadius:5, overflow:'hidden' }}>
+                  <div style={{ width: (count > 0 ? Math.max(pct, 2) : 0) + '%', height:'100%', borderRadius:5,
+                    background:color, transition:'width .5s ease' }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Footer note */}
+        <div style={{ marginTop:14, paddingTop:12, borderTop:'1px solid var(--border)',
+          display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <span style={{ fontSize:11, color:'var(--t3)' }}>
+            Based on <strong style={{ color:'var(--t1)' }}>{residents.length}</strong> residents scored
+          </span>
+          <span style={{ fontSize:11, color:'var(--t3)' }}>
+            Full breakdown available in the <strong style={{ color:'var(--blue)' }}>Risk Intelligence</strong> page
+          </span>
+        </div>
+      </div>
+
     </div>
   )
 }
