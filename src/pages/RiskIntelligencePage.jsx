@@ -77,46 +77,6 @@ export default function RiskIntelligencePage() {
         </div>
       </div>
 
-      {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr 1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
-        {/* Overall gauge — color changes live */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', gap: 8, padding: 16, border: '2px solid ' + overallColor + '40' }}>
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--t3)',
-            textTransform: 'uppercase', letterSpacing: '.5px' }}>Overall Risk</div>
-          <ScoreGauge score={overallScore} color={overallColor} size={100} />
-          <span style={{ fontSize: 11.5, fontWeight: 800, padding: '3px 14px', borderRadius: 20,
-            background: overallColor + '22', color: overallColor,
-            border: '1px solid ' + overallColor + '44',
-            letterSpacing: '.5px', textTransform: 'uppercase' }}>
-            {overallLabel}
-          </span>
-        </div>
-
-        {/* KPI cards */}
-        {[
-          [highCount,   'High Risk',    'Residents scoring 70+',    'var(--red)',    'fa-triangle-exclamation', 'HIGH'],
-          [mediumCount, 'Medium Risk',  'Residents scoring 40-69',  'var(--orange)', 'fa-circle-exclamation',   'MEDIUM'],
-          [lowCount,    'Low Risk',     'Residents scoring 0-39',   'var(--green)',  'fa-circle-check',         'LOW'],
-          [residents.filter(r => r.evacuationStatus === 'Unaccounted').length,
-           'Unaccounted', 'Evacuation status unknown', 'var(--yellow)', 'fa-person-circle-question', null],
-        ].map(([v, l, sub, c, ico, level]) => (
-          <div key={l} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14,
-            border: '1px solid ' + c + '33', cursor: level ? 'pointer' : 'default' }}
-            onClick={() => { if (level) { setTab('residents'); setFilterLevel(level) } }}>
-            <div style={{ width: 46, height: 46, borderRadius: 11, background: c + '1a',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <i className={'fa-solid ' + ico} style={{ color: c, fontSize: 20 }}></i>
-            </div>
-            <div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: c, lineHeight: 1 }}>{v}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)', marginTop: 3 }}>{l}</div>
-              <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 2 }}>{sub}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 7, marginBottom: 18 }}>
         {[
@@ -251,33 +211,7 @@ export default function RiskIntelligencePage() {
               </tbody>
             </table>
           </div>
-          {/* Recommendations */}
-          <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--t3)',
-              textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 12 }}>
-              BDRRMC Recommendations
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 10 }}>
-              {zoneRisks.map(z => (
-                <div key={z.zone} style={{ background: 'var(--bg-el)', borderRadius: 9,
-                  padding: '11px 14px', borderLeft: '3px solid ' + z.riskColor }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
-                    <span style={{ fontWeight: 700, fontSize: 13, color: z.riskColor }}>{z.zone}</span>
-                    <span className={'badge bd-' + (z.riskLabel === 'HIGH' ? 'danger' : z.riskLabel === 'MEDIUM' ? 'warning' : 'success')}
-                      style={{ fontSize: 9 }}>{z.riskLabel}</span>
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.6 }}>
-                    {z.zone === 'Zone 1' && 'Maintain evacuation drills. Check drainage monthly. Conduct fire safety seminars.'}
-                    {z.zone === 'Zone 2' && 'Pre-position emergency supplies. Monitor creek levels daily during rainy season.'}
-                    {z.zone === 'Zone 3' && 'Mandatory pre-emptive evacuation planning. Deploy flood sensors near Cagayan River. Priority response zone.'}
-                    {z.zone === 'Zone 4' && 'Conduct community awareness. Maintain first-aid inventory. Consider as primary evacuation hub.'}
-                    {z.zone === 'Zone 5' && 'HIGH PRIORITY. Pre-evacuation recommended. Rescue teams on standby. No new construction on steep slopes.'}
-                    {z.zone === 'Zone 6' && 'Monitor river and slope stability. Update resident contact lists. Install early warning sirens.'}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+
         </div>
       )}
 
