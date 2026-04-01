@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react'
-import { ZONE_COORDS } from '../data/zones'
+import { useCallback, useEffect, useState } from 'react';
+import { ZONE_COORDS } from '../data/zones';
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -385,10 +385,18 @@ export function useLocalData() {
     }
   }, [log])
 
+  const logSignOut = useCallback(async (userName) => {
+    log(`Signed out: ${userName}`, 'Auth', userName)
+    await api('/auth/logout/', {
+      method: 'POST',
+      body: { user_name: userName },
+    }).catch(() => {})
+  }, [log])
+
   return {
     loading: false, dbError: null, refresh: loadAll,
     incidents, alerts, evacCenters, residents, resources, users, activityLog,
-    loginUser,
+    loginUser, logSignOut,
     fetchAlerts,
     addIncident, updateIncident, deleteIncident,
     addAlert, deleteAlert,

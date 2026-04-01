@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import { WeatherProvider } from './context/WeatherContext'
 
-import Sidebar  from './components/layout/Sidebar'
-import Topbar   from './components/layout/Topbar'
-import Login    from './pages/Login'
+import Sidebar from './components/layout/Sidebar'
+import Topbar from './components/layout/Topbar'
+import Login from './pages/Login'
 
-import Dashboard            from './pages/Dashboard'
-import MapPage              from './pages/MapPage'
-import IncidentsPage        from './pages/IncidentsPage'
-import AlertsPage           from './pages/AlertsPage'
-import EvacuationPage       from './pages/EvacuationPage'
-import ResidentsPage        from './pages/ResidentsPage'
-import ResourcesPage        from './pages/ResourcesPage'
-import ReportsPage          from './pages/ReportsPage'
+import ActivityLogPage from './pages/ActivityLogPage'
+import AlertsPage from './pages/AlertsPage'
+import Dashboard from './pages/Dashboard'
+import EvacuationPage from './pages/EvacuationPage'
+import IncidentsPage from './pages/IncidentsPage'
+import MapPage from './pages/MapPage'
+import ReportsPage from './pages/ReportsPage'
+import ResidentsPage from './pages/ResidentsPage'
+import ResourcesPage from './pages/ResourcesPage'
 import RiskIntelligencePage from './pages/RiskIntelligencePage'
-import UsersPage            from './pages/UsersPage'
-import ActivityLogPage      from './pages/ActivityLogPage'
+import UsersPage from './pages/UsersPage'
 
 const PAGES = {
   dashboard:    Dashboard,
@@ -33,7 +33,7 @@ const PAGES = {
 }
 
 function Shell() {
-  const { loginUser } = useApp()
+  const { loginUser, logSignOut } = useApp()
   const [user, setUser] = useState(null)
   const [activePage, setActivePage] = useState(() => {
     const h = window.location.hash.slice(1)
@@ -46,7 +46,8 @@ function Shell() {
     return result
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (user) await logSignOut(user.name)
     setUser(null)
     setActivePage('dashboard')
   }
