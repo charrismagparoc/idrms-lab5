@@ -39,8 +39,19 @@ async function api(path, options = {}) {
     body: options.body ? JSON.stringify(options.body) : undefined,
   })
   if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`API error ${res.status}: ${err}`)
+    let errMsg = `API error ${res.status}`
+    try {
+      const errBody = await res.json()
+      
+      const details = Object.entries(errBody)
+        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+        .join(' | ')
+      errMsg += ` — ${details}`
+    } catch {
+      const text = await res.text().catch(() => '')
+      if (text) errMsg += ` — ${text}`
+    }
+    throw new Error(errMsg)
   }
   if (res.status === 204) return null
   return res.json()
@@ -182,17 +193,21 @@ export function useLocalData() {
 
   
   const addAlert = useCallback(async (data, userName = 'System') => {
+    const level   = data.level   || 'Advisory'
+    const zone    = data.zone    || 'All Zones'
+    const message = data.message || ''
+    const title   = data.title   || `${level} — ${zone}`
     const payload = {
-      title:            data.title,
-      message:          data.message || '',
-      level:            data.level || 'Advisory',
-      zone:             data.zone || 'All Zones',
-      recipients_count: data.smsCount || data.recipients_count || 0,
+      title,
+      message,
+      level,
+      zone,
+      recipients_count: data.recipients_count ?? data.smsCount ?? 0,
       sent_by:          userName,
     }
     const record = await api('/alerts/', { method: 'POST', body: payload })
     setAlerts(prev => [record, ...prev])
-    log(`Alert sent: ${data.title}`, 'Alert', userName, data.level === 'Danger')
+    log(`Alert sent: ${title}`, 'Alert', userName, level === 'Danger')
     return record
   }, [log])
 

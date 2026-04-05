@@ -159,7 +159,7 @@ function ResidentSmsDropdown({ residents, selectedIds, onChange }) {
   )
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// Main Page
 export default function AlertsPage() {
   const { alerts, addAlert, deleteAlert, fetchAlerts, residents = [] } = useApp()
   const [showModal,      setShowModal]      = useState(false)
@@ -173,45 +173,56 @@ export default function AlertsPage() {
   const [sentZone,       setSentZone]       = useState('')
   const [deleteId,       setDeleteId]       = useState(null)
   const [sendErr,        setSendErr]        = useState('')
+  const [previewAlert,   setPreviewAlert]   = useState(null)
+
+  const messageRef = useRef('')
 
   const openModal = () => {
-    setLevel('Advisory'); setZone('All Zones'); setMessage('')
+    setLevel('Advisory'); setZone('All Zones'); setMessage(''); messageRef.current = ''
     setSelectedResIds([])
     setSent(false); setSendErr(''); setSmsStatus(null)
     setShowModal(true)
   }
 
   const openQuick = q => {
-    setLevel(q.level); setZone(q.zone); setMessage(q.msg)
+    setLevel(q.level); setZone(q.zone); setMessage(q.msg); messageRef.current = q.msg
     setSelectedResIds([])
     setSent(false); setSendErr(''); setSmsStatus(null)
     setShowModal(true)
   }
 
   const handleSend = async () => {
-    // Read directly from state variables — no stale closure possible
-    const trimmedMessage = message.trim()
-    if (!trimmedMessage) { setSendErr('Message is required.'); return }
+    const trimmedMessage = (message || messageRef.current || '').trim()
+    if (!trimmedMessage) { setSendErr('Alert message is required.'); return }
+    if (!level) { setSendErr('Alert level is required.'); return }
+    if (!zone) { setSendErr('Target zone is required.'); return }
     setSendErr('')
     setSending(true)
 
-    // Save alert first — this must always succeed regardless of SMS
+    
     try {
-      await addAlert({
+      const result = await addAlert({
         level,
         zone,
         message: trimmedMessage,
-        title: level + ' Alert — ' + zone,
-        // Only pass recipients_count when SMS recipients were manually chosen
-        ...(selectedResIds.length > 0 ? { recipients_count: selectedResIds.length } : {}),
+        title: level + ' — ' + zone,
+        recipients_count: selectedResIds.length,
       })
+      console.log('[AlertsPage] addAlert result:', result)
+      
+      if (result?.error) {
+        throw new Error(result.error?.message || JSON.stringify(result.error))
+      }
+      
+      if (typeof fetchAlerts === 'function') await fetchAlerts()
     } catch (e) {
-      setSendErr('Failed to send alert: ' + e.message)
+      console.error('[AlertsPage] addAlert failed:', e)
+      setSendErr('Error: ' + (e?.message || String(e)))
       setSending(false)
       return
     }
 
-    // SMS is optional — errors here never block the alert
+    
     if (selectedResIds.length > 0) {
       try {
         const selected = residents.filter(r => selectedResIds.includes(r.id))
@@ -266,33 +277,107 @@ export default function AlertsPage() {
       <div className="sec-title">
         <i className="fa-solid fa-clock-rotate-left"></i> Alert History ({alerts.length})
       </div>
-      {alerts.length === 0 ? (
-        <div className="empty"><i className="fa-solid fa-bell-slash"></i><p>No alerts sent yet.</p></div>
-      ) : (
-        <div className="alert-list">
-          {alerts.map(a => (
-            <div key={a.id} className={'alert-card ' + (LVL_BG_CLS[a.level] || '')}>
-              <div className="alert-card-inner">
-                <i className="fa-solid fa-bell alert-card-icon" style={{ color: LVL_COLOR[a.level] || 'var(--blue)' }}></i>
-                <div className="alert-card-body">
-                  <div className="alert-card-top">
-                    <span className={'badge ' + LVL_CLS[a.level]}>{a.level}</span>
-                    <strong className="alert-card-title">{a.title || a.level + ' Alert'}</strong>
-                    <span className="alert-card-zone">{a.zone}</span>
+      <div className="card" style={{ padding: 0 }}>
+        <div className="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Level</th>
+                <th>Message</th>
+                <th>Zone</th>
+                <th>Sent By</th>
+                <th>Recipients</th>
+                <th>Date & Time</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {alerts.map(a => (
+                <tr key={a.id}>
+                  <td>
+                    <span className={'badge ' + LVL_CLS[a.level]}>
+                      <i className="fa-solid fa-bell" style={{ marginRight: 4 }}></i>
+                      {a.level}
+                    </span>
+                  </td>
+                  <td style={{ maxWidth: 360 }}>
+                    <div
+                      onClick={() => setPreviewAlert(a)}
+                      style={{ fontSize: 13, color: 'var(--t1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 340, cursor: 'pointer' }}
+                      title="Click to preview full message"
+                    >
+                      <i className="fa-solid fa-eye" style={{ marginRight: 6, opacity: 0.4, fontSize: 11 }}></i>
+                      {a.message}
+                    </div>
+                  </td>
+                  <td><span style={{ fontSize: 12 }}>{a.zone}</span></td>
+                  <td style={{ fontSize: 12, color: 'var(--t2)' }}>
+                    <i className="fa-solid fa-user" style={{ marginRight: 4, opacity: 0.5 }}></i>
+                    {a.sent_by || a.sentBy || 'System'}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <span className="badge bd-purple">
+                      <i className="fa-solid fa-users" style={{ marginRight: 4 }}></i>
+                      {a.recipients_count || a.recipientsCount || 0}
+                    </span>
+                  </td>
+                  <td style={{ fontSize: 12, color: 'var(--t2)', whiteSpace: 'nowrap' }}>
+                    {a.created_at || a.sentAt
+                      ? new Date(a.created_at || a.sentAt).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : '—'}
+                  </td>
+                  <td>
+                    <button type="button" className="btn btn-danger btn-sm" onClick={() => setDeleteId(a.id)} title="Delete">
+                      <i className="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {alerts.length === 0 && (
+                <tr><td colSpan={7}>
+                  <div className="empty">
+                    <i className="fa-solid fa-bell-slash" style={{ fontSize: 32, opacity: 0.4 }}></i>
+                    <p>No alerts sent yet.</p>
                   </div>
-                  <div className="alert-card-msg">{a.message}</div>
-                  <div className="alert-card-meta">
-                    <span><i className="fa-solid fa-user"></i> {a.sent_by || a.sentBy || 'System'}</span>
-                    <span><i className="fa-solid fa-users"></i> {a.recipients_count || a.recipientsCount || 0} recipients</span>
-                    <span><i className="fa-solid fa-clock"></i> {a.created_at || a.sentAt ? new Date(a.created_at || a.sentAt).toLocaleString('en-PH',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'}</span>
-                  </div>
-                </div>
-              </div>
-              <button type="button" className="alert-del-btn" onClick={() => setDeleteId(a.id)}>
-                <i className="fa-solid fa-trash"></i>
-              </button>
+                </td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {previewAlert && (
+        <div className="modal-ov" onClick={() => setPreviewAlert(null)}>
+          <div className="modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h3>
+                <i className="fa-solid fa-bell" style={{ color: LVL_COLOR[previewAlert.level] || 'var(--blue)', marginRight: 8 }}></i>
+                Alert Message
+              </h3>
+              <button className="modal-x" onClick={() => setPreviewAlert(null)} type="button"><i className="fa-solid fa-xmark"></i></button>
             </div>
-          ))}
+            <div style={{ padding: '0 4px 4px' }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
+                <span className={'badge ' + LVL_CLS[previewAlert.level]}>
+                  <i className="fa-solid fa-bell" style={{ marginRight: 4 }}></i>{previewAlert.level}
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--t3)' }}><i className="fa-solid fa-map-marker-alt" style={{ marginRight: 4 }}></i>{previewAlert.zone}</span>
+                <span style={{ fontSize: 12, color: 'var(--t3)' }}><i className="fa-solid fa-user" style={{ marginRight: 4 }}></i>{previewAlert.sent_by || previewAlert.sentBy || 'System'}</span>
+                <span style={{ fontSize: 12, color: 'var(--t3)', marginLeft: 'auto' }}>
+                  <i className="fa-solid fa-clock" style={{ marginRight: 4 }}></i>
+                  {previewAlert.created_at || previewAlert.sentAt
+                    ? new Date(previewAlert.created_at || previewAlert.sentAt).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : '—'}
+                </span>
+              </div>
+              <div style={{ background: 'var(--bg2)', borderRadius: 8, padding: '14px 16px', fontSize: 14, lineHeight: 1.7, color: 'var(--t1)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', border: '1px solid var(--border)' }}>
+                {previewAlert.message}
+              </div>
+            </div>
+            <div className="modal-foot">
+              <button className="btn btn-secondary" onClick={() => setPreviewAlert(null)} type="button">Close</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -303,8 +388,8 @@ export default function AlertsPage() {
       )}
 
       {showModal && (
-        <div className="modal-ov" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-ov" onClick={() => { if (!sending) setShowModal(false) }}>
+          <div className="modal" onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
             <div className="modal-hdr">
               <h3><i className="fa-solid fa-bullhorn" style={{ color:'var(--red)', marginRight:8 }}></i>Send Emergency Alert</h3>
               <button className="modal-x" onClick={() => setShowModal(false)} type="button"><i className="fa-solid fa-xmark"></i></button>
@@ -336,7 +421,7 @@ export default function AlertsPage() {
                   </div>
                   <div className="form-grp full">
                     <label>Alert Message *</label>
-                    <textarea className="form-ctrl" rows={4} placeholder="e.g. FLOOD WARNING: Water level critically high..." value={message} onChange={e => setMessage(e.target.value)}></textarea>
+                    <textarea className="form-ctrl" rows={4} placeholder="e.g. FLOOD WARNING: Water level critically high..." value={message} onChange={e => { setMessage(e.target.value); messageRef.current = e.target.value }}></textarea>
                   </div>
                   <div className="form-grp full">
                     <label>
