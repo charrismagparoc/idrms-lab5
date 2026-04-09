@@ -19,11 +19,17 @@ export default function Topbar({ activePage, currentUser, onLogout }) {
   const [showProfile,  setShowProfile]  = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [theme, setTheme] = useState(() => localStorage.getItem('idrms-theme') || 'dark')
+  const [isReloading, setIsReloading] = useState(false)
 
   const applyTheme = t => {
     setTheme(t)
     localStorage.setItem('idrms-theme', t)
     document.documentElement.setAttribute('data-theme', t)
+  }
+
+  const handleRefresh = () => {
+    setIsReloading(true)
+    window.location.reload()
   }
 
   const riskCls = `risk-${(weather.riskLevel || 'low').toLowerCase()}`
@@ -60,6 +66,10 @@ export default function Topbar({ activePage, currentUser, onLogout }) {
 
         <button className="icon-btn" onClick={() => applyTheme(theme === 'dark' ? 'light' : 'dark')} title="Toggle theme" type="button">
           <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
+        </button>
+
+        <button className="icon-btn" onClick={handleRefresh} disabled={isReloading} title="Refresh page" type="button">
+          <i className={`fa-solid fa-rotate-right ${isReloading ? 'spinning' : ''}`}></i>
         </button>
 
         <div className="t-notif-wrap">

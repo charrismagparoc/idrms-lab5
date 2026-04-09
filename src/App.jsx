@@ -34,7 +34,13 @@ const PAGES = {
 
 function Shell() {
   const { loginUser, logSignOut } = useApp()
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('idrms-user'))
+    } catch {
+      return null
+    }
+  })
   const [activePage, setActivePage] = useState(() => {
     const h = window.location.hash.slice(1)
     return h && PAGES[h] ? h : 'dashboard'
@@ -42,13 +48,17 @@ function Shell() {
 
   const handleLogin = async (email, password) => {
     const result = await loginUser(email, password)
-    if (result.success) setUser(result.user)
+    if (result.success) {
+      setUser(result.user)
+      localStorage.setItem('idrms-user', JSON.stringify(result.user))
+    }
     return result
   }
 
   const handleLogout = async () => {
     if (user) await logSignOut(user.name)
     setUser(null)
+    localStorage.removeItem('idrms-user')
     setActivePage('dashboard')
   }
 

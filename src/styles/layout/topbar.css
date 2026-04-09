@@ -124,3 +124,14 @@
 /* ─── HUMIDITY ────────────────────────────────────────────────────────────── */
 .t-humidity { color: var(--t3) !important; font-size: 10px; }
 .t-crumb-icon { font-size: 9px; opacity: .3; }
+
+/* ─── REFRESH BUTTON ANIMATION ───────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
