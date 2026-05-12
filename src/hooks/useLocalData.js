@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ZONE_COORDS } from '../data/zones';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'https://idrms-fastapi-ml.onrender.com/api';
 
 let _id = 1000
 const nextId = () => String(++_id)
 
 
-const normInc  = r => ({ ...r, dateReported: r.date_reported, createdAt: r.created_at })
-const normEvac = r => ({ ...r, facilitiesAvailable: r.facilities_available || [], contactPerson: r.contact_person })
+const normInc  = r => ({ ...r, id: String(r.id), dateReported: r.date_reported, createdAt: r.created_at })
+const normEvac = r => ({ ...r, id: String(r.id), facilitiesAvailable: r.facilities_available || [], contactPerson: r.contact_person })
 const normRes  = r => ({
   ...r,
+  id: String(r.id),
   householdMembers:  r.household_members,
   evacuationStatus:  r.evacuation_status,
   vulnerabilityTags: r.vulnerability_tags || [],
@@ -18,7 +19,7 @@ const normRes  = r => ({
   addedAt:           r.added_at,
   updatedAt:         r.updated_at,
 })
-const normUser = r => ({ ...r, lastLogin: r.last_login, createdAt: r.created_at })
+const normUser = r => ({ ...r, id: String(r.id), lastLogin: r.last_login, createdAt: r.created_at })
 const normAct  = r => ({
   ...r,
   id:        String(r.id),
